@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PurpleChat - Real-time Messaging</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <style>
+        :root {
+            --primary-purple: #8A2BE2;
+            --light-purple: #E6E6FA;
+            --dark-purple: #4B0082;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --text-dark: #333333;
+            --text-light: #777777;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--light-purple);
+            color: var(--text-dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            background-color: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.2);
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 350px;
+            background: linear-gradient(135deg, var(--dark-purple), var(--primary-purple));
+            color: var(--white);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            margin-right: 10px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 15px;
+            color: var(--primary-purple);
+            font-weight: 600;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .user-status {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            margin-right: 5px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border-radius: 25px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .search-bar::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-bar:focus {
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .chat-item:hover, .chat-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-right: 15px;
+            color: var(--primary-purple);
+            font-weight: 600;
+        }
+
+        .chat-details {
+            flex: 1;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chat-preview {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Main Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--light-gray);
+            position: relative;
+        }
+
+        .chat-header-bar {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--white);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 5;
+        }
+
+        .current-chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--light-purple);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 15px;
+            color: var(--primary-purple);
+            font-weight: 600;
+        }
+
+        .current-chat-info {
+            flex: 1;
+        }
+
+        .current-chat-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .current-chat-status {
+            font-size: 13px;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-actions {
+            display: flex;
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            cursor: pointer;
+            color: var(--primary-purple);
+            transition: background-color 0.3s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--light-purple);
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 15px;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sent {
+            align-self: flex-end;
+            background-color: var(--primary-purple);
+            color: var(--white);
+            border-bottom-right-radius: 5px;
+        }
+
+        .received {
+            align-self: flex-start;
+            background-color: var(--white);
+            color: var(--text-dark);
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .message-time {
+            font-size: 11px;
+            margin-top: 5px;
+            text-align: right;
+            opacity: 0.8;
+        }
+
+        .media-message {
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .media-message img, .media-message video {
+            width: 100%;
+            max-height: 250px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .media-caption {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            font-size: 14px;
+        }
+
+        /* Message Input */
+        .message-input-container {
+            padding: 15px;
+            background-color: var(--white);
+            display: flex;
+            align-items: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .input-actions {
+            display: flex;
+            margin-right: 15px;
+        }
+
+        .input-action {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            cursor: pointer;
+            color: var(--primary-purple);
+            transition: background-color 0.3s;
+        }
+
+        .input-action:hover {
+            background-color: var(--light-purple);
+        }
+
+        .message-input {
+            flex: 1;
+            min-height: 45px;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: none;
+            background-color: var(--light-gray);
+            resize: none;
+            font-size: 15px;
+            max-height: 120px;
+            outline: none;
+        }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: var(--primary-purple);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border: none;
+        }
+
+        .send-btn:hover {
+            background-color: var(--dark-purple);
+        }
+
+        /* Status Section */
+        .status-section {
+            display: flex;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 20px;
+            cursor: pointer;
+        }
+
+        .status-avatar {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .status-avatar::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, var(--primary-purple), var(--dark-purple));
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .status-avatar-inner {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background-color: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--primary-purple);
+            font-weight: 600;
+        }
+
+        .add-status {
+            background: linear-gradient(45deg, var(--primary-purple), var(--dark-purple));
+        }
+
+        .add-status .status-avatar-inner {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .status-name {
+            font-size: 13px;
+            max-width: 70px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .my-status-name {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Login Section */
+        .login-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(74, 0, 130, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .login-box {
+            background-color: var(--white);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 28px;
+            color: var(--primary-purple);
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            border: 2px solid var(--light-purple);
+            margin-bottom: 20px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 15px;
+            background: linear-gradient(to right, var(--primary-purple), var(--dark-purple));
+            color: var(--white);
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+        }
+
+        .signup-text {
+            margin-top: 20px;
+            color: var(--text-light);
+        }
+
+        .signup-link {
+            color: var(--primary-purple);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--white);
+            padding: 15px;
+            justify-content: space-around;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 20;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--primary-purple);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .nav-text {
+            font-size: 12px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                height: 95vh;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                height: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 20;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .bottom-nav {
+                display: flex;
+            }
+            
+            .mobile-menu-btn {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .app-container {
+                height: 100vh;
+                border-radius: 15px;
+            }
+            
+            .login-box {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 30;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-purple);
+            color: var(--white);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Mobile Menu Button -->
+        <div class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <div class="logo-text">PurpleChat</div>
+            </div>
+            
+            <!-- User Info -->
+            <div class="user-info">
+                <div class="user-avatar">JS</div>
+                <div class="user-details">
+                    <div class="user-name">John Smith</div>
+                    <div class="user-status">
+                        <div class="status-indicator"></div>
+                        <span>Online</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Section -->
+            <div class="status-section">
+                <div class="status-item add-status">
+                    <div class="status-avatar">
+                        <div class="status-avatar-inner">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                    </div>
+                    <div class="status-name my-status-name">My Status</div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-avatar">
+                        <div class="status-avatar-inner">ES</div>
+                    </div>
+                    <div class="status-name">Emma Stone</div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-avatar">
+                        <div class="status-avatar-inner">MJ</div>
+                    </div>
+                    <div class="status-name">Mike Johnson</div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-avatar">
+                        <div class="status-avatar-inner">SL</div>
+                    </div>
+                    <div class="status-name">Sarah Lee</div>
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-bar" placeholder="Search by username...">
+            </div>
+            
+            <!-- Chat List -->
+            <div class="chat-list">
+                <div class="chat-item active">
+                    <div class="chat-avatar">ES</div>
+                    <div class="chat-details">
+                        <div class="chat-header">
+                            <div class="chat-name">Emma Stone</div>
+                            <div class="chat-time">10:45 AM</div>
+                        </div>
+                        <div class="chat-preview">See you tomorrow at the meeting!</div>
+                    </div>
+                </div>
+                
+                <div class="chat-item">
+                    <div class="chat-avatar">MJ</div>
+                    <div class="chat-details">
+                        <div class="chat-header">
+                            <div class="chat-name">Mike Johnson</div>
+                            <div class="chat-time">Yesterday</div>
+                        </div>
+                        <div class="chat-preview">Did you check the new design?</div>
+                    </div>
+                </div>
+                
+                <div class="chat-item">
+                    <div class="chat-avatar">SL</div>
+                    <div class="chat-details">
+                        <div class="chat-header">
+                            <div class="chat-name">Sarah Lee</div>
+                            <div class="chat-time">Yesterday</div>
+                        </div>
+                        <div class="chat-preview">Thanks for your help with the project!</div>
+                    </div>
+                </div>
+                
+                <div class="chat-item">
+                    <div class="chat-avatar">TR</div>
+                    <div class="chat-details">
+                        <div class="chat-header">
+                            <div class="chat-name">Tom Roberts</div>
+                            <div class="chat-time">Wed</div>
+                        </div>
+                        <div class="chat-preview">Can we reschedule our meeting?</div>
+                    </div>
+                </div>
+                
+                <div class="chat-item">
+                    <div class="chat-avatar">AD</div>
+                    <div class="chat-details">
+                        <div class="chat-header">
+                            <div class="chat-name">Alex Davis</div>
+                            <div class="chat-time">Tue</div>
+                        </div>
+                        <div class="chat-preview">The files you requested are attached.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header-bar">
+                <div class="current-chat-avatar">ES</div>
+                <div class="current-chat-info">
+                    <div class="current-chat-name">Emma Stone</div>
+                    <div class="current-chat-status">
+                        <div class="status-indicator"></div>
+                        <span>Online - Last seen just now</span>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <div class="action-btn">
+                        <i class="fas fa-phone-alt"></i>
+                    </div>
+                    <div class="action-btn">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="action-btn">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Messages Container -->
+            <div class="messages-container">
+                <!-- Example messages -->
+                <div class="message received">
+                    Hi John! How are you doing today?
+                    <div class="message-time">10:30 AM</div>
+                </div>
+                
+                <div class="message sent">
+                    I'm doing great! Just finished the project we discussed.
+                    <div class="message-time">10:32 AM</div>
+                </div>
+                
+                <div class="message received">
+                    That's awesome! Can you share the screenshots?
+                    <div class="message-time">10:33 AM</div>
+                </div>
+                
+                <div class="message sent">
+                    <div class="media-message">
+                        <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="Project Screenshot">
+                        <div class="media-caption">Project UI Screenshot</div>
+                    </div>
+                    <div class="message-time">10:35 AM</div>
+                </div>
+                
+                <div class="message received">
+                    Wow, this looks amazing! I love the purple theme.
+                    <div class="message-time">10:37 AM</div>
+                </div>
+                
+                <div class="message sent">
+                    Thanks! I thought the purple and white would work well for the branding.
+                    <div class="message-time">10:38 AM</div>
+                </div>
+                
+                <div class="message received">
+                    Definitely! Let's meet tomorrow to discuss the details.
+                    <div class="message-time">10:40 AM</div>
+                </div>
+                
+                <div class="message sent">
+                    Sounds good. How about 2 PM at the usual place?
+                    <div class="message-time">10:42 AM</div>
+                </div>
+                
+                <div class="message received">
+                    Perfect! See you tomorrow at 2 PM 😊
+                    <div class="message-time">10:45 AM</div>
+                </div>
+            </div>
+            
+            <!-- Message Input -->
+            <div class="message-input-container">
+                <div class="input-actions">
+                    <div class="input-action">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="input-action">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <div class="input-action">
+                        <i class="fas fa-video"></i>
+                    </div>
+                </div>
+                <textarea class="message-input" placeholder="Type a message..."></textarea>
+                <button class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Login Container -->
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-title">PurpleChat Login</div>
+                <input type="text" class="login-input" placeholder="Username or Email">
+                <input type="password" class="login-input" placeholder="Password">
+                <button class="login-btn">Login</button>
+                <div class="signup-text">
+                    Don't have an account? <a href="#" class="signup-link">Sign Up</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <div class="nav-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="nav-text">Home</div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div class="nav-text">Status</div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="nav-text">Profile</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyBkikmtHLwG1mz3V0Ca_9YIzaJOmQN1JnY",
+  authDomain: "purple-chat-7aba5.firebaseapp.com",
+  projectId: "purple-chat-7aba5",
+  storageBucket: "purple-chat-7aba5.firebasestorage.app",
+  messagingSenderId: "417524713799",
+  appId: "1:417524713799:web:c00ac5146c26b4e1d62462"
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        
+        // DOM Elements
+        const loginContainer = document.querySelector('.login-container');
+        const sidebar = document.querySelector('.sidebar');
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        
+        // Toggle sidebar on mobile
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
+        
+        // Simulate login functionality
+        const loginBtn = document.querySelector('.login-btn');
+        loginBtn.addEventListener('click', () => {
+            loginContainer.classList.add('hidden');
+            
+            // Simulate Firebase login
+            // In a real app, you would use:
+            // auth.signInWithEmailAndPassword(email, password)
+            //   .then((userCredential) => { ... })
+            //   .catch((error) => { ... });
+        });
+        
+        // Handle message sending
+        const messageInput = document.querySelector('.message-input');
+        const sendBtn = document.querySelector('.send-btn');
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                // Create message element
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', 'sent');
+                messageElement.innerHTML = `
+                    ${message}
+                    <div class="message-time">${getCurrentTime()}</div>
+                `;
+                
+                // Add to messages container
+                const messagesContainer = document.querySelector('.messages-container');
+                messagesContainer.appendChild(messageElement);
+                
+                // Clear input
+                messageInput.value = '';
+                
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Simulate response after 1 second
+                setTimeout(simulateResponse, 1000);
+            }
+        }
+        
+        function simulateResponse() {
+            const responses = [
+                "Thanks for your message!",
+                "I'll get back to you soon.",
+                "That's interesting, tell me more.",
+                "Let me check and get back to you.",
+                "Great! When can we schedule a meeting?"
+            ];
+            
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'received');
+            messageElement.innerHTML = `
+                ${randomResponse}
+                <div class="message-time">${getCurrentTime()}</div>
+            `;
+            
+            const messagesContainer = document.querySelector('.messages-container');
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function getCurrentTime() {
+            const now = new Date();
+            return now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+        }
+        
+        // Event listeners
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Handle chat item clicks
+        const chatItems = document.querySelectorAll('.chat-item');
+        chatItems.forEach(item => {
+            item.addEventListener('click', () => {
+                chatItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Update chat header
+                const chatName = item.querySelector('.chat-name').textContent;
+                document.querySelector('.current-chat-name').textContent = chatName;
+                
+                // On mobile, close sidebar after selecting chat
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        });
+        
+        // Initialize the app
+        window.addEventListener('load', () => {
+            const messagesContainer = document.querySelector('.messages-container');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+    </script>
+</body>
+</html>
